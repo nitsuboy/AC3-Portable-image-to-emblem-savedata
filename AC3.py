@@ -1,6 +1,7 @@
 from PIL import Image, ImagePalette
+from io import BytesIO
 import PySimpleGUI as sg
-import io, os, sys
+import os, sys
 
 local = os.getcwd()
 
@@ -10,7 +11,7 @@ local = os.getcwd()
 img = [Image.open(os.path.join(sys._MEIPASS, "128x128.png"))]
 
 def convert_to_bytes(img):
-   with io.BytesIO() as bio:
+   with BytesIO() as bio:
       img.save(bio, format="PNG")
       del img
       return bio.getvalue()
@@ -63,19 +64,27 @@ layout = [  [sg.Text("File",key="-PATH-")],
              sg.Button('Save image'),
              sg.Button('Save SAVEDATA')] ]
 
-#window = sg.Window('AC3 image to emblem savedata', layout ,size=(350,250),icon= "images/crest.ico")
-window = sg.Window('AC3 image to emblem savedata', layout ,size=(350,250),icon=os.path.join(sys._MEIPASS, "crest.ico"))
+#window = sg.Window('AC3 image to emblem savedata',
+#                   layout ,size=(350,250),
+#                   icon= "images/crest.ico")
+window = sg.Window('AC3 image to emblem savedata',
+                   layout ,size=(350,250),
+                   icon=os.path.join(sys._MEIPASS, "crest.ico"))
 
 if not os.path.exists('out'):
     os.makedirs('out')
 
 while True:
     event, values = window.read()
+    print(event)
 
     if event == sg.WIN_CLOSED:
+        print("cu")
         break
 
     elif event == 'Open File':
+        window.disable()
+
         file = sg.popup_get_file('',
                                  multiple_files=False,
                                  no_window=True,
@@ -93,20 +102,21 @@ while True:
         elif file.endswith('.BIN'):
             img = open_emblem_from_savedata(file)
             window['-IMAGE-'].update(convert_to_bytes(img[0]))
-        else:
-            img = [Image.open("images/128x128.png")]
-            window['-IMAGE-'].update(convert_to_bytes(img[0]))
+        
+        window.enable()
+        window.force_focus()
 
     elif event == 'Save image':
         try:
             write_emblem_to_image()
         except Exception as e:
-            sg.popup(f"Error : {str(e)}")
+            sg.popup(f"Error : {str(e)}",title="Error")
+
     elif event == 'Save SAVEDATA':
         try:
             write_emblem_to_savedata()
             write_save_logo()
         except Exception as e:
-            sg.popup(f"Error : {str(e)}")
+            sg.popup(f"Error : {str(e)}",title="Error")
         
 window.close()
