@@ -1,1 +1,0 @@
-pyinstaller --onefile --add-data "images/128x128.png;." --add-data "images/crest.ico;." --add-data "images/back.png;." AC3.py 

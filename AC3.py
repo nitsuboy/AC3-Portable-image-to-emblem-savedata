@@ -3,12 +3,19 @@ from io import BytesIO
 import PySimpleGUI as sg
 import os, sys
 
+debug = True
 local = os.getcwd()
 
-#os.path.join(os.environ["_MEIPASS2"], "images/128x128.png")
-
-#img = [Image.open("images/128x128.png")]
-img = [Image.open(os.path.join(sys._MEIPASS, "128x128.png"))]
+if debug:
+    img = [Image.open("images/128x128.png")]
+    back = {"AC3" : "images/backAC3.png",
+            "ACLR" : "images/backACLR.png",
+            "ACFF" : "images/backACFF.png"}
+else:
+    img = [Image.open(os.path.join(sys._MEIPASS, "128x128.png"))]
+    back = {"AC3" : "backAC3.png",
+            "ACLR" : "backACLR.png",
+            "ACFF" : "backACFF.png"}
 
 def convert_to_bytes(img):
    with BytesIO() as bio:
@@ -34,8 +41,15 @@ def open_emblem_from_image(filename):
     pal = ImagePalette.ImagePalette("RGBA",data.getpalette(rawmode='RGBA'))
     return [data,pal]
 
-def write_emblem_to_savedata():
-    newFile = open("out/SAVEDATA.BIN", "wb")
+def write_save_logo(game):
+    backpath = back[game] if debug else os.path.join(sys._MEIPASS, back[game]) 
+    backim = Image.open(backpath)
+    emblem = img[0].resize((78,78)).convert('RGBA')
+    backim.paste(emblem,(1,1),emblem)
+    backim.save("out/"+ game +"/ICON0.PNG",'PNG')
+
+def write_emblem_to_savedata_AC3():
+    newFile = open("out/AC3/SAVEDATA.BIN", "wb")
     newFile.write(b'\x05\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
     newFile.write(img[0].tobytes())
     newFile.write(img[1].tobytes())
@@ -45,29 +59,53 @@ def write_emblem_to_savedata():
         if newFile.tell() >= 18432:
             break
         newFile.write(b'\x00')
+    
+    write_save_logo("AC3")
 
+def write_emblem_to_savedata_ACLR():
+    newFile = open("out/ACLR/SAVEDATA.BIN", "wb")
+    newFile.write(b'\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+    newFile.write(img[0].tobytes())
+    newFile.write(img[1].tobytes())
+
+    while True:
+        newFile.seek(0, 2)
+        if newFile.tell() >= 18432:
+            break
+        newFile.write(b'\x00')
+
+    write_save_logo("ACLR")
+
+def write_emblem_to_savedata_ACFF():
+    newFile = open("out/ACFF/DATA.BIN", "wb")
+    newFile.write(img[0].tobytes())
+    newFile.write(img[1].tobytes())
+
+    while True:
+        newFile.seek(0, 2)
+        if newFile.tell() >= 17432:
+            break
+        newFile.write(b'\x00')
+    
+    write_save_logo("ACFF")
+    
 def write_emblem_to_image():
     img[0].save("out/emblem.png",'PNG')
-
-def write_save_logo():
-    #back = Image.open("images/back.png")
-    back = Image.open(os.path.join(sys._MEIPASS, "back.png"))
-    emblem = img[0].resize((78,78)).convert('RGBA')
-    back.paste(emblem,(1,1),emblem)
-    back.save("out/ICON0.PNG",'PNG')
 
 sg.theme('DarkBrown4')
 
 layout = [  [sg.Text("File",key="-PATH-")],
             [sg.Image(convert_to_bytes(img[0]), expand_x=True, expand_y=True , key='-IMAGE-')],
             [sg.Button(button_text="Open File"),
-             sg.Button('Save image'),
-             sg.Button('Save SAVEDATA')] ]
+             sg.Button('Save to image')],
+            [sg.Button('Save to AC3'),
+             sg.Button('Save to ACFF'),
+             sg.Button('Save to ACLR')]]
 
-#window = sg.Window('AC3 image to emblem savedata',
-#                   layout ,size=(350,250),
-#                   icon= "images/crest.ico")
-window = sg.Window('AC3 image to emblem savedata',
+if debug:
+    window = sg.Window('AC image to emblem data' ,layout ,size=(350,250) ,icon= "images/crest.ico")
+else:
+    window = sg.Window('AC image to emblem data',
                    layout ,size=(350,250),
                    icon=os.path.join(sys._MEIPASS, "crest.ico"))
 
@@ -76,10 +114,8 @@ if not os.path.exists('out'):
 
 while True:
     event, values = window.read()
-    print(event)
 
     if event == sg.WIN_CLOSED:
-        print("cu")
         break
 
     elif event == 'Open File':
@@ -106,16 +142,33 @@ while True:
         window.enable()
         window.force_focus()
 
-    elif event == 'Save image':
+    elif event == 'Save to image':
         try:
             write_emblem_to_image()
         except Exception as e:
             sg.popup(f"Error : {str(e)}",title="Error")
 
-    elif event == 'Save SAVEDATA':
+    elif event == 'Save to AC3':
         try:
-            write_emblem_to_savedata()
-            write_save_logo()
+            if not os.path.exists('out/AC3'):
+                os.makedirs('out/AC3')
+            write_emblem_to_savedata_AC3()
+        except Exception as e:
+            sg.popup(f"Error : {str(e)}",title="Error")
+    
+    elif event == 'Save to ACFF':
+        try:
+            if not os.path.exists('out/ACFF'):
+                os.makedirs('out/ACFF')
+            write_emblem_to_savedata_ACFF()
+        except Exception as e:
+            sg.popup(f"Error : {str(e)}",title="Error")
+    
+    elif event == 'Save to ACLR':
+        try:
+            if not os.path.exists('out/ACLR'):
+                os.makedirs('out/ACLR')
+            write_emblem_to_savedata_ACLR()
         except Exception as e:
             sg.popup(f"Error : {str(e)}",title="Error")
         
