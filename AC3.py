@@ -24,8 +24,10 @@ def convert_to_bytes(img):
       return bio.getvalue()
 
 def open_emblem_from_savedata(filename):
+    
     file = open(filename,'rb')
-    file.seek(32)
+    file.seek(0, 2)
+    file.seek(0 if file.tell() < 18432 else 32)
     emblem = file.read(16384)
     pal = file.read(1024)
 

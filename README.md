@@ -4,7 +4,7 @@ works fine with AC3P decripted savefiles
 
 dont have a decryptor for the gamefiles yet, but, working on it
 
-working to open AC3P Last Raven too
+    pip install -r requirements.txt
 
 ![GUI](images/image.png)
 
